@@ -1,0 +1,11 @@
+# PyTorch y Torchvision NO se listan aqui a proposito: su build depende del
+# equipo y se instalan antes, con el indice correspondiente (ver
+# INSTALAR_WINDOWS_11.md). En planta van torch==2.13.0+cpu y
+# torchvision==0.28.0+cpu; en la laptop G15 con RTX 3050, +cu130. Las
+# versiones son las mismas en ambos casos: solo cambia el build.
+customtkinter==5.2.2
+numpy==2.4.4
+opencv-python==4.13.0.92
+Pillow==12.2.0
+ultralytics==8.4.103
+lap==0.5.13

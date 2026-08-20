@@ -1,0 +1,36 @@
+# ByteTrack para cámaras fijas de planta.
+#
+# Regla que hay que respetar: estos umbrales solo actúan sobre detecciones que
+# YA pasaron el filtro de confianza del detector. Si quedan por debajo de esa
+# confianza, nunca se aplican y cualquier caja suelta crea una identidad nueva
+# —que es exactamente lo que inflaba el conteo de objetos—.
+#
+# Con el perfil operativo (confianza 0.30 en CPU, 0.25 en GPU):
+tracker_type: bytetrack
+
+# Detección sólida: entra a la primera pasada de asociación.
+track_high_thresh: 0.35
+
+# Detección dudosa: reservada para la segunda pasada de asociación, que sirve
+# para RECUPERAR una identidad existente, nunca para crear una nueva.
+# Nota honesta: hoy el detector filtra en la confianza operativa (0.30), así que
+# ninguna detección por debajo de ese valor llega hasta aquí y este umbral queda
+# inactivo. Se deja preparado para cuando se decida bajar el filtro del detector
+# y dejar que el rastreador haga la selección fina.
+track_low_thresh: 0.10
+
+# Crear una identidad nueva exige más evidencia que conservar una existente.
+# Este es el ajuste que corrige el conteo inflado: al quedar POR ENCIMA de la
+# confianza operativa (0.55 > 0.30), una detección marginal ya no puede dar de
+# alta un objeto nuevo, solo puede emparejarse con uno que ya existía.
+new_track_thresh: 0.55
+
+# Cuadros que una identidad sobrevive sin verse. A 15 FPS son 6 segundos:
+# suficiente para que alguien pase detrás de una columna y siga siendo el mismo.
+track_buffer: 90
+
+# Umbral de asociación por solapamiento. Más alto = más tolerante al movimiento
+# entre cuadros, necesario cuando se trabaja a pocos FPS.
+match_thresh: 0.88
+
+fuse_score: True

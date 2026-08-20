@@ -1,0 +1,19 @@
+Modelo: YOLOv8 License Plate Detection
+Archivo local: yolov8n_placas_general_mit.pt
+Función: localizar placas vehiculares (1 clase: license_plate)
+Arquitectura: YOLOv8n / Ultralytics
+Entrada de entrenamiento: 640 px
+Tamaño: 6,248,291 bytes
+SHA-256: 2d95861825bb4184404344c9cf809f40fd31dba785fe54e8ba5b9a3583789822
+Repositorio: https://huggingface.co/Koushim/yolov8-license-plate-detection
+Archivo original: https://huggingface.co/Koushim/yolov8-license-plate-detection/blob/83c98fbe7412fe8b3950adb5637cfd08b0f04809/best.pt
+Licencia declarada por el repositorio: MIT
+Descargado: 2026-07-28
+
+IMPORTANTE
+Este modelo localiza el rectángulo de la placa, pero no transcribe sus caracteres.
+Para lectura completa se requiere una segunda etapa OCR y validación específica
+con placas mexicanas, cámaras, ángulos, distancias e iluminación reales.
+
+La licencia del modelo y las condiciones de uso/comercialización del runtime
+Ultralytics son asuntos separados; deben revisarse antes del despliegue empresarial.

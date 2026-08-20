@@ -1,0 +1,40 @@
+1. YOLOv8 Nano (General Rápido - 80 clases COCO)
+
+DOS
+curl.exe -L -O https://github.com/ultralytics/assets/releases/download/v8.2.0/yolov8n.pt
+2. YOLOv8 Extra-Large (General Preciso - 80 clases COCO)
+
+DOS
+curl.exe -L -O https://github.com/ultralytics/assets/releases/download/v8.2.0/yolov8x.pt
+3. YOLOv11 Nano (Última Generación - 80 clases COCO)
+
+DOS
+curl.exe -L -O https://github.com/ultralytics/assets/releases/download/v8.3.0/yolo11n.pt
+4. YOLOv8 Face (Especializado en Rostros)
+
+DOS
+curl.exe -L -O https://github.com/akanametov/yolo-face/releases/download/v0.0.0/yolov8n-face.pt
+5. YOLOv8 License Plates (Especializado en Placas Vehiculares)
+
+DOS
+curl.exe -L -O https://raw.githubusercontent.com/MengWoods/video-privacy-blur/main/models/license_plate_detector.pt
+6. YOLOv8 World (Detección por Texto / Zero-Shot)
+
+DOS
+curl.exe -L -O https://github.com/ultralytics/assets/releases/download/v8.2.0/yolov8s-worldv2.pt
+7. YOLOv8 Postura Humana (Pose/Keypoints - 17 puntos clave)
+
+DOS
+curl.exe -L -O https://github.com/ultralytics/assets/releases/download/v8.2.0/yolov8n-pose.pt
+8. YOLOv8 Segmentación (Máscaras - 80 clases COCO)
+
+DOS
+curl.exe -L -O https://github.com/ultralytics/assets/releases/download/v8.2.0/yolov8n-seg.pt
+9. YOLOv8 OBB (Cajas Delimitadoras Orientadas - 15 clases DOTA)
+
+DOS
+curl.exe -L -O https://github.com/ultralytics/assets/releases/download/v8.2.0/yolov8n-obb.pt
+10. YOLOv8 Clasificación de Imagen (Clasificación general - 1000 clases ImageNet)
+
+DOS
+curl.exe -L -O https://github.com/ultralytics/assets/releases/download/v8.2.0/yolov8n-cls.pt

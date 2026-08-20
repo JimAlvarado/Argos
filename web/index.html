@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#08111b">
+  <title>Arzyz Vision · Centro de Control</title>
+  <link rel="stylesheet" href="/styles.css?v=28">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">AV</div>
+        <div>
+          <strong>ARZYZ VISION</strong>
+          <span>Centro de monitoreo inteligente</span>
+        </div>
+      </div>
+
+      <nav aria-label="Navegación principal">
+        <p class="nav-label">PRINCIPAL</p>
+        <button class="nav-item active" data-view="modules">
+          <span class="nav-icon">▦</span> Módulos
+        </button>
+        <button class="nav-item" data-view="dashboard">
+          <span class="nav-icon">▥</span> Dashboard
+        </button>
+      </nav>
+
+      <div class="sidebar-status">
+        <span class="status-dot"></span>
+        <div>
+          <strong>Centro de Control</strong>
+          <span>Servicio local activo</span>
+        </div>
+      </div>
+    </aside>
+
+    <main>
+      <header class="topbar">
+        <div>
+          <span class="eyebrow">MONITOREO EMPRESARIAL</span>
+          <h1 id="page-title">Módulos de detección</h1>
+        </div>
+        <div class="topbar-meta">
+          <div class="system-pill"><span class="status-dot"></span>Sistema disponible</div>
+          <div class="clock" id="clock">--:--:--</div>
+        </div>
+      </header>
+
+      <section id="modules-view" class="view active">
+        <div class="welcome-panel">
+          <div>
+            <span class="eyebrow light">CENTRO DE CONTROL ARZYZ</span>
+            <h2>Seleccione el tipo de detección</h2>
+            <p>Cada herramienta funciona en una ventana y proceso independiente.</p>
+          </div>
+          <div class="welcome-status">
+            <span id="active-count">0</span>
+            <small>MÓDULOS ACTIVOS</small>
+          </div>
+        </div>
+
+        <div class="section-heading">
+          <div>
+            <h3>Soluciones de visión</h3>
+            <p>Abra únicamente los módulos necesarios para optimizar los recursos.</p>
+          </div>
+        </div>
+
+        <div class="module-grid" id="module-grid" aria-live="polite">
+          <article class="module-card objects available" data-module="objetos">
+            <div class="module-top">
+              <div class="module-icon">▥</div>
+              <span class="module-state">Disponible</span>
+            </div>
+            <div>
+              <span class="module-number">01</span>
+              <h3>Detección de Objetos</h3>
+              <p>Conteo de piezas en banda transportadora</p>
+            </div>
+            <button class="module-action" data-start="objetos">
+              Abrir detector <span>→</span>
+            </button>
+          </article>
+
+          <article class="module-card plates" data-module="placas">
+            <div class="module-top">
+              <div class="module-icon">▤</div>
+              <span class="module-state">Próximamente</span>
+            </div>
+            <div>
+              <span class="module-number">02</span>
+              <h3>Detección de Placas</h3>
+              <p>Lectura OCR y registro vehicular</p>
+            </div>
+            <button class="module-action" disabled>En preparación <span>→</span></button>
+          </article>
+
+          <article class="module-card vehicles" data-module="vehiculos">
+            <div class="module-top">
+              <div class="module-icon">▰</div>
+              <span class="module-state">Próximamente</span>
+            </div>
+            <div>
+              <span class="module-number">03</span>
+              <h3>Detección de Vehículos</h3>
+              <p>Clasificación, conteo y seguimiento</p>
+            </div>
+            <button class="module-action" disabled>En preparación <span>→</span></button>
+          </article>
+
+          <article class="module-card people available" data-module="personas">
+            <div class="module-top">
+              <div class="module-icon">♙</div>
+              <span class="module-state">Disponible</span>
+            </div>
+            <div>
+              <span class="module-number">04</span>
+              <h3>Detección de Personas</h3>
+              <p>Monitoreo, reglas y zonas de seguridad</p>
+            </div>
+            <button class="module-action" data-start="personas">
+              Abrir detector <span>→</span>
+            </button>
+          </article>
+
+          <article class="module-card holder available" data-module="mantenedor">
+            <div class="module-top">
+              <div class="module-icon">▮</div>
+              <span class="module-state">Disponible</span>
+            </div>
+            <div>
+              <span class="module-number">05</span>
+              <h3>Mantenedor</h3>
+              <p>Aperturas de puerta y tiempo abierto</p>
+            </div>
+            <button class="module-action" data-start="mantenedor">
+              Abrir módulo <span>→</span>
+            </button>
+          </article>
+
+          <article class="module-card hopper" data-module="tolva">
+            <div class="module-top">
+              <div class="module-icon">▽</div>
+              <span class="module-state">Próximamente</span>
+            </div>
+            <div>
+              <span class="module-number">06</span>
+              <h3>Tolva</h3>
+              <p>Llenado y envío de carga al horno</p>
+            </div>
+            <button class="module-action" disabled>En preparación <span>→</span></button>
+          </article>
+
+          <article class="module-card furnace" data-module="horno">
+            <div class="module-top">
+              <div class="module-icon">◉</div>
+              <span class="module-state">Próximamente</span>
+            </div>
+            <div>
+              <span class="module-number">07</span>
+              <h3>Horno Rotatorio</h3>
+              <p>Encendido, carga recibida y giro</p>
+            </div>
+            <button class="module-action" disabled>En preparación <span>→</span></button>
+          </article>
+        </div>
+      </section>
+
+      <section id="dashboard-view" class="view">
+        <div class="dashboard-heading">
+          <div>
+            <span class="eyebrow">OPERACIÓN EN TIEMPO REAL</span>
+            <h2>Dashboard de detecciones</h2>
+            <p>Estado general, actividad y eventos registrados por Arzyz Vision.</p>
+          </div>
+          <button class="refresh-button" id="generar-diagnostico"
+                  title="Genera un reporte tecnico en data\diagnostico">Diagnóstico</button>
+          <button class="refresh-button" id="refresh-dashboard">Actualizar</button>
+        </div>
+
+        <div class="metric-grid">
+          <article class="metric-card">
+            <span>EVENTOS HOY</span><strong id="events-today">0</strong>
+            <small>Registros de detección</small>
+          </article>
+          <button class="metric-card metric-button" data-evidence="objects">
+            <span>OBJETOS HOY</span><strong id="objects-today">0</strong>
+            <small>Ver capturas de objetos <b>→</b></small>
+          </button>
+          <button class="metric-card metric-button" data-evidence="crossings">
+            <span>CRUCES HOY</span><strong id="crossings-today">0</strong>
+            <small>Ver capturas de cruces <b>→</b></small>
+          </button>
+          <button class="metric-card metric-button warning" data-evidence="alerts">
+            <span>ALERTAS DE ZONA</span><strong id="alerts-today">0</strong>
+            <small>Ver capturas de alertas <b>→</b></small>
+          </button>
+          <article class="metric-card live">
+            <span>MÓDULOS ACTIVOS</span><strong id="dashboard-active">0</strong>
+            <small>Procesos supervisados</small>
+          </article>
+        </div>
+
+        <div class="dashboard-grid">
+          <article class="panel activity-panel">
+            <div class="panel-header">
+              <div><h3>Actividad de los últimos 7 días</h3><p>Eventos registrados por día</p></div>
+              <span class="panel-badge" id="events-total">0 históricos</span>
+            </div>
+            <div class="bar-chart" id="bar-chart"></div>
+          </article>
+
+          <article class="panel classes-panel">
+            <div class="panel-header">
+              <div><h3>Objetos más detectados</h3><p>Últimos 1,000 eventos</p></div>
+            </div>
+            <div class="class-list" id="class-list"></div>
+          </article>
+
+          <article class="panel recent-panel">
+            <div class="panel-header">
+              <div><h3>Actividad reciente</h3><p>Últimos eventos del sistema</p></div>
+              <span class="live-indicator"><i></i> EN VIVO · <b id="live-updated">CONECTANDO</b></span>
+            </div>
+            <div class="event-table-wrap">
+              <table>
+                <thead><tr><th>FECHA / HORA</th><th>FUENTE</th><th>DETECCIÓN</th><th>CONFIANZA</th></tr></thead>
+                <tbody id="recent-events"></tbody>
+              </table>
+            </div>
+          </article>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal-backdrop evidence-backdrop" id="evidence-modal">
+    <div class="dialog-card evidence-dialog">
+      <div class="evidence-header">
+        <div>
+          <span class="eyebrow">EVIDENCIA VISUAL</span>
+          <h2 id="evidence-title">Capturas</h2>
+          <p id="evidence-description">Últimas evidencias guardadas.</p>
+        </div>
+        <button type="button" class="modal-close static" data-close-modal="evidence-modal">×</button>
+      </div>
+      <div class="evidence-grid" id="evidence-grid"></div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop viewer-backdrop" id="viewer-modal" role="dialog" aria-modal="true"
+       aria-label="Visor de capturas">
+    <div class="viewer-shell">
+      <button type="button" class="viewer-nav prev" id="viewer-prev"
+              aria-label="Captura anterior (flecha izquierda)">‹</button>
+      <figure class="viewer-figure">
+        <img id="viewer-image" alt="">
+        <figcaption class="viewer-caption">
+          <div>
+            <strong id="viewer-label"></strong>
+            <span id="viewer-source"></span>
+          </div>
+          <div class="viewer-meta">
+            <time id="viewer-time"></time>
+            <b id="viewer-confidence"></b>
+            <span class="viewer-position" id="viewer-position"></span>
+          </div>
+        </figcaption>
+      </figure>
+      <button type="button" class="viewer-nav next" id="viewer-next"
+              aria-label="Captura siguiente (flecha derecha)">›</button>
+      <button type="button" class="modal-close viewer-close" data-close-modal="viewer-modal"
+              aria-label="Cerrar visor">×</button>
+      <p class="viewer-hint">Usa ← y → para cambiar de captura · Esc para cerrar</p>
+    </div>
+  </div>
+
+  <div class="modal-backdrop reporte-backdrop" id="reporte-modal" role="dialog" aria-modal="true"
+       aria-label="Reporte de diagnostico">
+    <div class="dialog-card reporte-dialog">
+      <div class="evidence-header">
+        <div>
+          <span class="eyebrow">DIAGNÓSTICO</span>
+          <h2>Reporte técnico</h2>
+          <p id="reporte-ruta">El archivo queda dentro del proyecto.</p>
+        </div>
+        <button type="button" class="modal-close static" data-close-modal="reporte-modal">×</button>
+      </div>
+      <div class="reporte-acciones">
+        <button type="button" class="refresh-button" id="reporte-copiar">Copiar todo</button>
+        <span class="reporte-nota" id="reporte-hallazgos"></span>
+      </div>
+      <pre class="reporte-texto" id="reporte-texto"></pre>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="/app.js?v=28"></script>
+</body>
+</html>

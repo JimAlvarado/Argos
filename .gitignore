@@ -1,0 +1,9 @@
+data/
+__pycache__/
+*.pyc
+modelos/*.pt
+modelos/*.onnx
+.venv/
+venv/
+tmp*
+node_modules/
