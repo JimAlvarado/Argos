@@ -1,7 +1,137 @@
 # Retomar aqui — 20 de agosto de 2026
 
-Version **0.8.5**. **258 pruebas en verde**
+Version **0.8.5**. **272 pruebas en verde**
 (`python -m unittest discover -s tests -v`).
+
+## AHORA SE USA GPU NVIDIA EN LOS DOS EQUIPOS
+
+Confirmado por Jim el 20-ago. Planta ya **no** es «sin GPU»: el build de PyTorch
+es CUDA en las dos maquinas y `+cpu` queda solo como respaldo. `CLAUDE.md`
+actualizado. Ojo con la conclusion facil: el cuello de las camaras de estados
+**no** es la inferencia sino **decodificar el flujo 4K** (40.2 % de un nucleo por
+camara contra 1.5 % del analisis), y eso la GPU no lo cambia salvo que se
+decodifique en hardware.
+
+## Tolva: MIDIENDO por deteccion de movimiento
+
+La tolva pasa a `available: True`. No mide nivel de llenado sino **movimiento**:
+lo que interesa es cuando se esta cargando y cuanto dura.
+
+**La senal**: `MovimientoEnRegion` en `core/pipeline/senales.py`. Devuelve el %
+de pixeles cuyo gris cambio mas de **25 niveles** respecto de la muestra
+anterior.
+
+Por que contar pixeles y no promediar la diferencia (medido sobre los 10 min del
+video del 20-jul, region de la artesa, 2 Hz, tramos verificados en imagen):
+
+| senal | quieta | cargando | separacion |
+|---|---|---|---|
+| diferencia media | 1.1 a 1.8 | 3.4 a 12.6 | 3-7x |
+| **% pixeles > 25** | **0.05 a 0.30** | **2.3 a 14.7** | **83x** |
+
+La diferencia media **nunca baja de 1.1** con la escena quieta: ese piso es el
+RUIDO del sensor, que mueve un poco todos los pixeles y se come la senal. El
+umbral por pixel lo descarta.
+
+**Dos estados medidos**: quieta **0.11** (370 muestras, sd 0.09, max 0.61),
+cargando **9.41** (480 muestras, sd 6.67). El **100 %** de las muestras quietas
+cae por debajo del umbral de salida: cero falsos positivos.
+
+Verificado **4/4** contra imagen: t=105 y 340 sin cargador (0.14 y 0.09);
+t=420 cargador descargando con los faros reflejando (21.2); t=545 chatarra
+cayendo en el aire (12.5).
+
+**Validado de punta a punta** con `tools.calibrar_estado --estacion tolva`:
+9 ciclos de carga en los tramos correctos (35-89, 202-214, 269-295, 397-453,
+515-570 s).
+
+### Dos cosas que el video ya dejo claras
+
+- **El carro NO se mueve** en estos 10 min: sigue en la misma posicion. Lo que se
+  mueve es el cargador frontal y la chatarra. Si operacion quiere detectar el
+  **envio de carga al horno** (el carro desplazandose por los rieles), hace falta
+  video con ese movimiento: esta senal no lo distingue del acto de cargar.
+- **Cuanto cuenta como «una carga» es decision de operacion.** El cargador hace
+  pausas de 5-10 s dentro de un mismo ciclo, asi que el CONTEO depende de la
+  permanencia (10 cargas con 3 s, 6 con 5 s) y el tiempo total del umbral
+  (37 % con los dos estados medidos, 26 % con los que deduce el k-medias).
+  Los 4 ciclos macro del video se ven claros; el criterio para agruparlos no lo
+  pone el codigo.
+
+### Decision de diseno: senales con memoria
+
+La de movimiento necesita el cuadro ANTERIOR, y las otras tres son funciones
+puras. En vez de duplicar el motor, se declara como **CLASE** en `ESTACIONES` y
+`construir_senal()` la instancia una vez por medicion, dentro del hilo. Las
+funciones pasan intactas, asi que **el mantenedor se comporta igual** (cubierto
+con prueba). Si se guardara ya instanciada, dos procesos compartirian el cuadro
+previo y la primera muestra tras un reinicio se compararia contra la ultima de la
+sesion anterior.
+
+### Bugs prevenidos, cada uno con prueba que falla sin el arreglo
+
+1. **Los faros del cargador**: el brillo de la region sube ~10 niveles al entrar
+   la maquina. Con el umbral en 25 no cuenta como movimiento. Bajarlo a 5 hace
+   fallar la prueba. Era el falso positivo mas probable en una nave de noche.
+2. **Mover la region con la medicion corriendo**: la interfaz lo permite, y
+   `absdiff` con dos formas distintas **lanza excepcion y tumba el ciclo**.
+   Quitar la guarda produce ERROR en la prueba.
+
+### Al probar en vivo
+
+`region` esta calibrada para el encuadre del video del 20-jul. Antes de INICIAR
+MEDICION, darle **SOLO VISTA** y confirmar que el recuadro cae sobre el interior
+de la artesa: es la misma leccion del mantenedor. La camara no se movio en el
+video (max 0.83 px), pero el margen contra el umbral de 2.0 px es de 2.4x, mucho
+menos holgado que el del mantenedor (0.07 px): si el paso del cargador la hace
+vibrar, puede marcar hueco.
+
+    set ARZYZ_MODULE_ID=tolva && python detector_estados.py
+
+## Tablero: la linea de fundicion quedo unificada
+
+Las cuatro camaras de la linea estaban **dispersas** en el tablero (01 objetos,
+05 mantenedor, 06 tolva, 07 horno) con placas, vehiculos y personas
+intercalados, y ni en el orden del proceso. Ahora hay dos secciones:
+
+- **Proceso de fundicion**: tolva (01) -> horno (02) -> mantenedor (03) ->
+  lingotera/objetos (04), en el orden real del flujo.
+- **Seguridad y vigilancia**: personas (05), placas (06), vehiculos (07).
+
+`MODULES` en `centro_control.py` quedo en el MISMO orden, porque `status()` lo
+recorre en orden y alimenta `/api/status`: si el registro y el HTML discrepan, el
+operador ve una cosa y la API entrega otra. La lista de la linea se declara una
+sola vez, en `MODULOS_FUNDICION`.
+
+`?v=29` en app.js y styles.css. **No se toco la logica de ningun detector**, ni
+los identificadores (`data-module`, `data-start`, `ARZYZ_MODULE_ID`), asi que los
+latidos y el supervisor siguen igual.
+
+Cubierto por `AgrupacionDeLaLineaTest` (5 pruebas nuevas), y **se verifico que
+falla al reintroducir el bug**: al intercalar "personas" en la linea, 3 de las 5
+fallan senalando el orden roto.
+
+### Un proceso por camara: validado con medicion
+
+Medido sobre un cuadro 4K real en la laptop G15:
+
+| Parte | Costo | % de un nucleo |
+|---|---|---|
+| recortar + senal R-G | 2.41 ms/muestra | 0.48 % |
+| vigilancia de camara movida | 4.92 ms/muestra | 0.98 % |
+| **analisis total** (2 Hz) | **7.33 ms** | **1.47 %** |
+| **decodificar el flujo 4K en vivo** | — | **40.2 %** |
+
+El dato que decide: **la decodificacion cuesta 27 veces mas que el analisis**.
+Cada camara tiene que decodificar su propio flujo pase lo que pase, asi que
+unificar los cuatro modulos en un proceso **no ahorraria nada medible** (~1.5 %
+de nucleo por estacion) y costaria el aislamiento de fallos, que es justo lo que
+hace que la caida de un RTSP no se lleve las otras tres camaras.
+
+Cuatro procesos suman ~1.7 nucleos de decodificacion mas la inferencia de la
+lingotera, sobre los **20 nucleos** de la PC de planta. Un proceso por camara se
+confirma como la decision correcta. Medido en la G15: conviene repetirlo en
+planta, donde hay mas nucleos pero puede que mas lentos por nucleo.
 
 ## Estado en una linea
 

@@ -46,6 +46,8 @@ from core.pipeline.estados import Histeresis, MaquinaDeEstado
 from core.pipeline.senales import (  # noqa: F401
     ESTACIONES,
     SENALES,
+    MovimientoEnRegion,
+    construir_senal,
     recortar,
     senal_rosado,
 )
@@ -156,7 +158,12 @@ class VigilanteDeEstado(threading.Thread):
             nombre_activo=self.ajustes["nombre_activo"],
             nombre_inactivo=self.ajustes["nombre_inactivo"],
         )
-        medir = self.ajustes["senal"]
+        # Una senal con memoria (la de movimiento) se instancia AQUI, dentro del
+        # hilo y una vez por medicion: si se guardara ya instanciada en
+        # ESTACIONES, dos procesos o dos arranques compartirian el cuadro previo
+        # y la primera muestra tras un reinicio se compararia contra la ultima
+        # de la sesion anterior. Para las senales sin estado no cambia nada.
+        medir = construir_senal(self.ajustes["senal"])
         previo_registro = None
         ventana_hann = None
         movida_desde: float | None = None

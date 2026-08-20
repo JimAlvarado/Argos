@@ -1,4 +1,4 @@
-# Arzyz Vision — contexto para Claude Code
+# Arzyz Vision — contexto para Codex
 
 Sistema de visión por computadora **operando en planta** (ARZYZ, aluminio).
 Cuenta lingotes en banda y detecta personas. Windows 11, Python 3.14,
@@ -115,17 +115,7 @@ más de un módulo, propón el plan primero y espera aprobación.
     fundición», y personas/placas/vehículos en «Seguridad y vigilancia». La
     lista se declara una sola vez en `MODULOS_FUNDICION`. `status()` recorre
     `MODULES` en orden y alimenta `/api/status`: si el registro y el HTML
-    discrepan, el operador ve una cosa y la API entrega otra. Cubierto por
-    `AgrupacionDeLaLineaTest`.
-  - **Un proceso por cámara está validado con medición**: decodificar el flujo
-    4K cuesta 40.2% de un núcleo y el análisis solo 1.5% — 27 veces más. Cada
-    cámara decodifica el suyo de todos modos, así que unificar los módulos en un
-    proceso no ahorraría nada medible y costaría el aislamiento de fallos.
-  - **Señales con memoria**: la de movimiento necesita el cuadro anterior, y las
-    otras son funciones puras. Se declara como CLASE en `ESTACIONES` y
-    `construir_senal()` la instancia una vez por medición, dentro del hilo. Si
-    se guardara instanciada, dos procesos compartirían el cuadro previo y la
-    primera muestra tras un reinicio se compararía con la sesión anterior.
+    discrepan, el operador ve una cosa y la API entrega otra.
   - **Cámara PTZ**: el desplazamiento global se compara entre muestras
     CONSECUTIVAS, nunca contra una referencia fija del arranque. Con referencia
     fija la aparición del resplandor hace saltar el desplazamiento a cientos de
@@ -163,15 +153,18 @@ más de un módulo, propón el plan primero y espera aprobación.
     quietas cae bajo el umbral de salida. **Contar píxeles, no promediar la
     diferencia**: la diferencia media nunca baja de 1.1 con la escena quieta
     porque el ruido del sensor mueve un poco todos los píxeles, y solo separa
-    3-7×. El umbral de 25 es además lo que hace que los **faros** del cargador
+    3-7×. El umbral de 25 también es lo que hace que los **faros** del cargador
     (que suben el brillo ~10 niveles) no cuenten como movimiento.
-    Pendiente de operación: **cuánto cuenta como «una carga»** — el cargador
-    hace pausas de 5-10 s dentro de un ciclo, así que el conteo depende de la
-    permanencia (10 cargas con 3 s, 6 con 5 s). Y el carro NO se mueve en el
-    video del 20-jul: para cronometrar el «envío al horno» hace falta video con
-    el carro desplazándose por los rieles.
+    Pendiente de operación: **cuánto cuenta como «una carga»** (el cargador hace
+    pausas de 5-10 s dentro de un ciclo, así que el conteo depende de la
+    permanencia). Y el carro NO se mueve en el video del 20-jul: para cronometrar
+    el «envío al horno» hace falta video con el carro desplazándose.
     El archivo dice «Tolva norte» y el OSD «Tolva Sur»: resolver antes de
     nombrar la fuente.
+  - **Señales con memoria**: la de movimiento necesita el cuadro anterior, y las
+    otras son funciones puras. Se declara como CLASE en `ESTACIONES` y
+    `construir_senal()` la instancia una vez por medición, dentro del hilo. Si
+    se guardara instanciada, dos procesos compartirían el cuadro previo.
   - Los videos traen reloj en pantalla (OSD): es la base de la correlación
     entre cámaras sin sincronizar procesos.
   - PLC: existe y gobierna horno y mantenedor. Esta etapa es solo cámaras; la

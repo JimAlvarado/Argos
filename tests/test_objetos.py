@@ -398,6 +398,81 @@ class ContratoDeTarjetaTest(unittest.TestCase):
         self.assertNotIn(".module-card.facial", self.css)
 
 
+class AgrupacionDeLaLineaTest(unittest.TestCase):
+    """Las cuatro camaras de la linea van juntas y en el orden del proceso.
+
+    Estaban dispersas: 01 objetos, 05 mantenedor, 06 tolva, 07 horno, con
+    placas, vehiculos y personas intercalados, aunque son la MISMA linea (la
+    tolva carga el horno, el horno vuelca al mantenedor y de ahi sale el metal a
+    la lingotera, que es la que cuenta). Nada fallaba de forma visible, y por eso
+    mismo un refactor futuro puede volver a dispersarlas sin que nadie lo note:
+    es la clase de costura que en este proyecto ya causo bugs reales.
+
+    Se comprueba el HTML y el registro por separado y luego que coincidan, para
+    que no se puedan desincronizar el uno del otro.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.html = (RAIZ / "web" / "index.html").read_text(encoding="utf-8")
+        cls.centro = (RAIZ / "centro_control.py").read_text(encoding="utf-8")
+        cls.linea = ["tolva", "horno", "mantenedor", "objetos"]
+
+    def _orden_en_el_tablero(self) -> list[str]:
+        return re.findall(r'data-module="([^"]+)"', self.html)
+
+    def _orden_en_el_registro(self) -> list[str]:
+        bloque = self.centro[self.centro.index("MODULES = {"):]
+        bloque = bloque[: bloque.index("\n}\n")]
+        return [t.split('"')[0] for t in re.split(r'\n    "', bloque)[1:]]
+
+    def test_la_linea_se_declara_una_sola_vez(self):
+        # Si la lista se repitiera en varios sitios, tarde o temprano una queda
+        # vieja. `MODULOS_FUNDICION` es la fuente y esta prueba fija su orden.
+        encontrado = re.search(r"MODULOS_FUNDICION = \(([^)]+)\)", self.centro)
+        self.assertIsNotNone(
+            encontrado, "centro_control debe declarar MODULOS_FUNDICION")
+        self.assertEqual(self.linea,
+                         re.findall(r'"([^"]+)"', encontrado.group(1)))
+
+    def test_las_cuatro_van_seguidas_en_el_tablero(self):
+        orden = self._orden_en_el_tablero()
+        for estacion in self.linea:
+            self.assertIn(estacion, orden, f"falta la tarjeta de {estacion}")
+        posiciones = [orden.index(e) for e in self.linea]
+        esperado = list(range(min(posiciones), min(posiciones) + len(self.linea)))
+        self.assertEqual(
+            esperado, posiciones,
+            "las tarjetas de la linea no estan seguidas; hay otro dominio "
+            f"intercalado: {orden}")
+
+    def test_estan_en_el_orden_del_proceso(self):
+        orden = self._orden_en_el_tablero()
+        self.assertEqual(
+            self.linea, [m for m in orden if m in self.linea],
+            "el tablero no sigue tolva -> horno -> mantenedor -> lingotera")
+
+    def test_el_registro_sigue_el_mismo_orden_que_el_tablero(self):
+        # `status()` recorre MODULES en orden, asi que si el registro y el HTML
+        # discrepan el operador ve una cosa y la API entrega otra.
+        self.assertEqual(self._orden_en_el_tablero(),
+                         self._orden_en_el_registro())
+
+    def test_cada_estacion_de_la_linea_tiene_color_de_acento(self):
+        css = (RAIZ / "web" / "styles.css").read_text(encoding="utf-8")
+        for estacion in self.linea:
+            marca = f'data-module="{estacion}"'
+            inicio = self.html.rindex("<article", 0, self.html.index(marca))
+            clases = re.findall(
+                r'class="([^"]+)"',
+                self.html[inicio: self.html.index(">", inicio)])[0]
+            tipo = [c for c in clases.split()
+                    if c not in ("module-card", "available")]
+            self.assertTrue(tipo, f"la tarjeta de {estacion} no tiene tipo")
+            self.assertIn(f".module-card.{tipo[0]} {{ --accent:", css,
+                          f"falta el color de acento de .{tipo[0]}")
+
+
 class PanelDeFuenteTest(unittest.TestCase):
     """El panel de fuente debe ser identico al del detector de personas.
 

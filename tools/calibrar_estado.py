@@ -35,7 +35,12 @@ import numpy as np
 from core import paths
 from core.camera import abrir_fuente
 from core.pipeline.estados import Histeresis, MaquinaDeEstado
-from core.pipeline.senales import ESTACIONES, SENALES, recortar
+from core.pipeline.senales import (
+    ESTACIONES,
+    SENALES,
+    construir_senal,
+    recortar,
+)
 from core.utils import formato_duracion
 
 ANCHO_REGISTRO = 640
@@ -105,10 +110,11 @@ def main(argv=None) -> int:
     if region is None:
         analizador.error("Falta --region o --estacion para deducirla.")
     if argumentos.senal:
-        medir = SENALES[argumentos.senal]
+        medir = construir_senal(SENALES[argumentos.senal])
         nombre_senal = argumentos.senal
     elif ajustes.get("senal") is not None:
-        medir = ajustes["senal"]
+        # Las senales con memoria se declaran como clase; hay que instanciarlas.
+        medir = construir_senal(ajustes["senal"])
         nombre_senal = ajustes["origen"].split(":")[-1]
     else:
         analizador.error(

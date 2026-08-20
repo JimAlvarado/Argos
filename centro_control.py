@@ -39,12 +39,56 @@ HOST = "127.0.0.1"
 DEFAULT_PORT = 8765
 APP_VERSION = "21"
 
+# El orden de este registro es el ORDEN DEL PROCESO, no el historico de
+# implementacion, y es el mismo que el de las tarjetas en web/index.html: la
+# tolva carga el horno, el horno vuelca al mantenedor y del mantenedor sale el
+# metal a la lingotera, que es la que cuenta piezas. Las cuatro son la misma
+# linea y por eso van juntas; personas, placas y vehiculos son otro dominio.
+#
+# `status()` recorre este diccionario en orden, asi que el tablero y cualquier
+# consumidor de /api/status ven la linea en su secuencia real.
 MODULES = {
+    # --- Proceso de fundicion: las cuatro camaras de la linea ---------------
+    # Fase 2: estados con duracion. Tolva, horno y mantenedor comparten UN
+    # script y se distinguen por su identificador, que es el que se inyecta en
+    # ARZYZ_MODULE_ID y con el que cada proceso late. Un script y tres
+    # procesos: una sola base de codigo sin perder el aislamiento de fallos.
+    "tolva": {
+        "title": "Tolva",
+        "subtitle": "Movimiento en la artesa: carga de chatarra",
+        # Senal de MOVIMIENTO calibrada el 20-ago-2026 contra el video del
+        # 20-jul y verificada 4/4 contra imagen (quieta 0.11, cargando 9.41:
+        # 83x de separacion). Detalle en core/pipeline/senales.py.
+        "available": True,
+        "script": BASE_DIR / "detector_estados.py",
+    },
+    "horno": {
+        "title": "Horno Rotatorio",
+        "subtitle": "Encendido, carga recibida y giro",
+        # "Encendido/apagado" NO es medible con esta camara: medido el
+        # 20-ago-2026, la senal optica depende de la posicion del tambor y no
+        # del horno. El detalle esta en core/pipeline/senales.py.
+        "available": False,
+        "script": BASE_DIR / "detector_estados.py",
+    },
+    "mantenedor": {
+        "title": "Mantenedor",
+        "subtitle": "Aperturas de puerta y tiempo abierto",
+        "available": True,
+        "script": BASE_DIR / "detector_estados.py",
+    },
     "objetos": {
         "title": "Detección de Objetos",
         "subtitle": "Conteo de piezas en banda transportadora",
         "available": True,
         "script": BASE_DIR / "detector_objetos.py",
+    },
+    # --- Seguridad y vigilancia: otro dominio ------------------------------
+    "personas": {
+        "title": "Detección de Personas",
+        "subtitle": "Monitoreo, reglas y zonas de seguridad",
+        "available": True,
+        "script": BASE_DIR / "detector_empresarial.py",
     },
     "placas": {
         "title": "Detección de Placas",
@@ -56,38 +100,12 @@ MODULES = {
         "subtitle": "Clasificación, conteo y seguimiento",
         "available": False,
     },
-    "personas": {
-        "title": "Detección de Personas",
-        "subtitle": "Monitoreo, reglas y zonas de seguridad",
-        "available": True,
-        "script": BASE_DIR / "detector_empresarial.py",
-    },
-    # Fase 2: estados con duracion. Las tres estaciones comparten UN script y
-    # se distinguen por su identificador, que es el que se inyecta en
-    # ARZYZ_MODULE_ID y con el que cada proceso late. Un script y tres
-    # procesos: una sola base de codigo sin perder el aislamiento de fallos.
-    "mantenedor": {
-        "title": "Mantenedor",
-        "subtitle": "Aperturas de puerta y tiempo abierto",
-        "available": True,
-        "script": BASE_DIR / "detector_estados.py",
-    },
-    "tolva": {
-        "title": "Tolva",
-        "subtitle": "Llenado y envío de carga al horno",
-        # Sin señal calibrada contra video real todavia; el modulo tampoco
-        # arranca en una estacion sin calibrar.
-        "available": False,
-        "script": BASE_DIR / "detector_estados.py",
-    },
-    "horno": {
-        "title": "Horno Rotatorio",
-        "subtitle": "Encendido, carga recibida y giro",
-        # Falta muestra de horno apagado (umbral) y de tambor girando.
-        "available": False,
-        "script": BASE_DIR / "detector_estados.py",
-    },
 }
+
+# Los identificadores de la linea de fundicion, en orden de proceso. Se declara
+# una sola vez aqui para que el tablero, las pruebas y cualquier vista futura
+# usen la misma fuente y no una lista repetida que se desincronice.
+MODULOS_FUNDICION = ("tolva", "horno", "mantenedor", "objetos")
 
 
 class ModuleManager:

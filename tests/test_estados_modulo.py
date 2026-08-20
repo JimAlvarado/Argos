@@ -54,13 +54,98 @@ class SenalRosadoTest(unittest.TestCase):
         self.assertEqual(0.0, de.senal_rosado(np.zeros((0, 0, 3), np.uint8)))
 
 
+class SenalMovimientoTest(unittest.TestCase):
+    """% de pixeles que cambiaron. Es la senal validada de la tolva."""
+
+    @staticmethod
+    def _gris(nivel: int, tamano=(40, 60)) -> np.ndarray:
+        return np.full((tamano[0], tamano[1], 3), nivel, dtype=np.uint8)
+
+    def test_sin_cambio_da_cero(self):
+        medir = de.MovimientoEnRegion()
+        cuadro = self._gris(80)
+        medir(cuadro)
+        self.assertEqual(0.0, medir(cuadro))
+
+    def test_la_primera_muestra_da_cero(self):
+        # No hay con que comparar; inventar un valor seria una carga fantasma
+        # en el primer instante de cada medicion.
+        self.assertEqual(0.0, de.MovimientoEnRegion()(self._gris(80)))
+
+    def test_un_cambio_grande_se_mide_en_porcentaje(self):
+        medir = de.MovimientoEnRegion()
+        base = self._gris(40)
+        medir(base)
+        movido = base.copy()
+        movido[:20, :] = 200          # la mitad superior cambia 160 niveles
+        self.assertAlmostEqual(50.0, medir(movido), places=3)
+
+    def test_los_FAROS_no_cuentan_como_movimiento(self):
+        """Regresion del falso positivo mas probable en una nave de noche.
+
+        El cargador entra con luces y el brillo medio de la region sube unos 10
+        niveles (medido: de ~68 a ~78). Un cambio GLOBAL de 10 niveles esta por
+        debajo del umbral por pixel, asi que no debe contar como movimiento. Si
+        alguien baja UMBRAL_CAMBIO por debajo de 10, esto lo atrapa.
+        """
+        medir = de.MovimientoEnRegion()
+        medir(self._gris(68))
+        self.assertEqual(0.0, medir(self._gris(78)))
+
+    def test_si_la_region_cambia_de_tamano_no_revienta(self):
+        """La interfaz permite mover los deslizadores con la medicion corriendo.
+
+        `absdiff` con formas distintas lanza excepcion y tumbaria el ciclo; y
+        aunque no lo hiciera, comparar dos encuadres distintos daria un
+        movimiento inventado justo al ajustar el recuadro.
+        """
+        medir = de.MovimientoEnRegion()
+        medir(self._gris(80, tamano=(40, 60)))
+        self.assertEqual(0.0, medir(self._gris(80, tamano=(30, 50))))
+
+    def test_un_recorte_vacio_no_revienta(self):
+        medir = de.MovimientoEnRegion()
+        medir(self._gris(80))
+        self.assertEqual(0.0, medir(np.zeros((0, 0, 3), np.uint8)))
+
+    def test_dos_instancias_no_comparten_el_cuadro_previo(self):
+        # Si el estado fuera de clase, dos estaciones o dos arranques se
+        # contaminarian entre si.
+        primera, segunda = de.MovimientoEnRegion(), de.MovimientoEnRegion()
+        primera(self._gris(0))
+        self.assertEqual(0.0, segunda(self._gris(255)),
+                         "la segunda instancia no debe ver nada previo")
+
+    def test_construir_senal_instancia_las_clases_y_respeta_las_funciones(self):
+        from core.pipeline.senales import construir_senal
+
+        medir = construir_senal(de.MovimientoEnRegion)
+        self.assertIsInstance(medir, de.MovimientoEnRegion)
+        # Las senales sin estado son funciones y deben pasar intactas: de eso
+        # depende que el mantenedor siga comportandose igual.
+        self.assertIs(de.senal_rosado, construir_senal(de.senal_rosado))
+
+
 class EstacionesTest(unittest.TestCase):
-    def test_solo_el_mantenedor_esta_calibrado(self):
-        # Estado real al 19-ago-2026. Si alguien marca otra como calibrada sin
+    def test_que_estaciones_estan_calibradas(self):
+        # Estado real al 20-ago-2026. Si alguien marca otra como calibrada sin
         # medirla, esta prueba lo obliga a justificarlo aqui.
         self.assertTrue(de.ESTACIONES["mantenedor"]["calibrada"])
-        self.assertFalse(de.ESTACIONES["tolva"]["calibrada"])
+        self.assertTrue(de.ESTACIONES["tolva"]["calibrada"])
+        # El horno NO, y ya no es por falta de video: la senal optica mide si se
+        # VE el interior incandescente, y eso lo decide la posicion del tambor,
+        # no el horno. El detalle medido esta en core/pipeline/senales.py.
         self.assertFalse(de.ESTACIONES["horno"]["calibrada"])
+
+    def test_la_tolva_conserva_los_valores_medidos_en_video(self):
+        # Medido el 20-ago sobre el video del 20-jul, tramos verificados 4/4
+        # contra imagen. Si alguien los cambia sin remedir, el tiempo de carga
+        # se corrompe en silencio.
+        ajustes = de.ESTACIONES["tolva"]
+        self.assertAlmostEqual(0.11, ajustes["inactivo_medido"], places=2)
+        self.assertAlmostEqual(9.41, ajustes["activo_medido"], places=2)
+        self.assertIs(de.MovimientoEnRegion, ajustes["senal"],
+                      "la senal con memoria se declara como CLASE, no instancia")
 
     def test_una_estacion_calibrada_trae_sus_dos_estados_medidos(self):
         # Sin los DOS extremos medidos no hay umbral posible: es la razon por la

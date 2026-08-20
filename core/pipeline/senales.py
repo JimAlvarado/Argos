@@ -10,6 +10,7 @@ y sin ambos no hay umbral posible.
 """
 from __future__ import annotations
 
+import cv2
 import numpy as np
 
 
@@ -68,11 +69,85 @@ def senal_ocupacion_clara(recorte: np.ndarray) -> float:
     return float((gris > 140).mean() * 100.0)
 
 
+class MovimientoEnRegion:
+    """Cuanto se movio la region respecto de la muestra anterior.
+
+    Devuelve el PORCENTAJE de pixeles cuyo nivel de gris cambio mas de
+    `UMBRAL_CAMBIO`. Es la senal de la tolva: alli no interesa un color ni un
+    nivel, sino si algo se esta moviendo (el cargador frontal descargando
+    chatarra en la artesa).
+
+    **Por que contar pixeles y no promediar la diferencia.** Medido el
+    20-ago-2026 sobre los 10 min del video del 20-jul, region de la artesa,
+    2 Hz, con los tramos verificados contra imagen:
+
+        senal                quieta        cargando       separacion
+        diferencia media     1.1 a 1.8     3.4 a 12.6     3-7x
+        % pixeles > 25       0.05 a 0.30   2.3 a 14.7     83x
+
+    La diferencia media nunca baja de 1.1 con la escena quieta porque el RUIDO
+    del sensor mueve un poco TODOS los pixeles, y ese piso se come la senal. Un
+    umbral por pixel descarta ese ruido: con la escena quieta el 100 % de las
+    muestras quedan por debajo del umbral de salida de la histeresis.
+
+    **Y resiste los faros**, que era la forma mas probable de falso positivo en
+    una nave de noche: el cargador entra con luces y el brillo medio de la
+    region sube unos 10 niveles, pero un cambio global de 10 niveles esta por
+    debajo del umbral de 25 y no cuenta como movimiento.
+
+    **Tiene MEMORIA**, a diferencia de las otras senales, que son funciones
+    puras. Por eso es una clase, y por eso en `ESTACIONES` y en `SENALES` se
+    guarda la CLASE y no una instancia: cada proceso construye la suya y no
+    comparte el cuadro previo con nadie. Quien la consuma debe instanciarla.
+
+    El valor depende del INTERVALO entre muestras: a 2 Hz compara cuadros
+    separados 0.5 s. Cambiar `HZ_ANALISIS` cambia lo que la senal significa y
+    obliga a recalibrar.
+    """
+
+    # Niveles de gris que un pixel debe cambiar para contar como movimiento.
+    # 25 sale de la medicion de arriba: descarta el ruido del sensor y el
+    # cambio global de los faros, y aun asi deja pasar la chatarra cayendo.
+    UMBRAL_CAMBIO = 25
+
+    def __init__(self) -> None:
+        self._previo: np.ndarray | None = None
+
+    def __call__(self, recorte: np.ndarray) -> float:
+        if recorte.size == 0:
+            # Region degenerada por los deslizadores: se olvida lo anterior para
+            # no comparar contra un encuadre que ya no existe.
+            self._previo = None
+            return 0.0
+        gris = cv2.cvtColor(recorte, cv2.COLOR_BGR2GRAY)
+        previo, self._previo = self._previo, gris
+        if previo is None or previo.shape != gris.shape:
+            # Primera muestra, o el operador movio la region con la medicion
+            # corriendo. `absdiff` con formas distintas revienta, y aunque no
+            # reventara, comparar dos encuadres distintos daria un movimiento
+            # inventado justo al ajustar el recuadro.
+            return 0.0
+        diferencia = cv2.absdiff(gris, previo)
+        return float((diferencia > self.UMBRAL_CAMBIO).mean() * 100.0)
+
+
 SENALES = {
     "rosado": senal_rosado,
     "brillo": senal_brillo,
     "ocupacion": senal_ocupacion_clara,
+    "movimiento": MovimientoEnRegion,
 }
+
+
+def construir_senal(senal):
+    """Devuelve algo llamable a partir de lo que declara una estacion.
+
+    Las senales sin estado son funciones y se usan tal cual; las que tienen
+    memoria se declaran como CLASE y hay que instanciarlas una vez por proceso.
+    Vive aqui para que el modulo y el calibrador no repitan el mismo `isinstance`
+    y no se les olvide a la vez.
+    """
+    return senal() if isinstance(senal, type) else senal
 
 
 # Region de interes en coordenadas RELATIVAS (0-1), no en pixeles: la camara del
@@ -95,15 +170,29 @@ ESTACIONES = {
     },
     "tolva": {
         "titulo": "Tolva",
-        "nombre_activo": "cargada",
-        "nombre_inactivo": "vacia",
-        "senal": None,
-        "origen": "camara:ocupacion",
-        "inactivo_medido": None,
-        "activo_medido": None,
-        "region": {"x": 0.26, "y": 0.26, "w": 0.52, "h": 0.16},
-        "calibrada": False,
-        "descripcion": "Llenado y envio de carga al horno",
+        # Se mide MOVIMIENTO, no nivel: lo que interesa es cuando se esta
+        # cargando y cuanto dura, no cuanta chatarra hay. El nivel se descarto
+        # como senal principal porque depende de la forma del monton y de la
+        # sombra, mientras que el movimiento se verifico 4/4 contra imagen.
+        "nombre_activo": "cargando",
+        "nombre_inactivo": "quieta",
+        # La CLASE, no una instancia: tiene memoria del cuadro previo y cada
+        # proceso necesita la suya. `construir_senal` la instancia.
+        "senal": MovimientoEnRegion,
+        "origen": "camara:movimiento",
+        # Medido el 20-ago-2026 sobre el video del 20-jul (10 min, 4K, 2 Hz),
+        # promediando SOLO las muestras de tramos verificados contra imagen:
+        # 370 muestras quietas (media 0.11, sd 0.09, max 0.61) y 480 cargando
+        # (media 9.41, sd 6.67, max 26.39). Separacion de 83x, y el 100 % de las
+        # muestras quietas cae por debajo del umbral de salida.
+        "inactivo_medido": 0.11,
+        "activo_medido": 9.41,
+        # El interior de la artesa: donde cae la chatarra y entra la cuchara.
+        # Verificada dibujada sobre el cuadro antes de medir; excluye la cabina
+        # del cargador y el suelo para no contar su paso como carga.
+        "region": {"x": 0.19, "y": 0.13, "w": 0.58, "h": 0.30},
+        "calibrada": True,
+        "descripcion": "Movimiento en la artesa: carga de chatarra",
     },
     "horno": {
         "titulo": "Horno rotatorio",
